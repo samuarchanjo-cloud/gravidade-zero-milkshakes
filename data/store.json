@@ -1,0 +1,226 @@
+{
+  "branding": {
+    "name": "Gravidade Zero Milkshakes",
+    "tagline": "Milkshakes intergalácticos — Guaratiba",
+    "logoUrl": "https://instasize.com/api/image/e204d36e3002c4beb3cf26e5d8690962ce5f95c1780784b594b7608d7ac49ce4.jpeg",
+    "heroImageUrl": "https://res.cloudinary.com/ddc8f5ani/image/upload/f_auto,q_auto/1000219966_wxxs2q",
+    "bannerTitle": "Escolha Seu Destino",
+    "bannerImageUrl": "https://instasize.com/api/image/1dcd2df37885311b4b942acbf1cca637f235d4f6c65edc1d869643a0dcc282a3.jpeg"
+  },
+  "theme": {
+    "primary": "#7C3AED",
+    "secondary": "#22D3EE",
+    "accent": "#4ADE80",
+    "background": "#050510",
+    "surface": "#0c0818",
+    "text": "#F8FAFC",
+    "muted": "#94A3B8"
+  },
+  "business": {
+    "whatsappNumber": "5521980467622",
+    "address": "Estrada Cabuçu de Baixo, 388 - Guaratiba",
+    "openingHours": "Seg–Sáb 15h–00h",
+    "deliveryFee": 0,
+    "minOrderDelivery": 0,
+    "currency": "BRL"
+  },
+  "texts": {
+    "heroTitle": "Sabores da galáxia",
+    "heroSubtitle": "Toque no sabor para montar sua missão",
+    "deliveryLabel": "Delivery",
+    "pickupLabel": "Retirada no local",
+    "checkoutTitle": "Finalizar pedido",
+    "checkoutHint": "Ao confirmar, o WhatsApp abrirá com seu pedido pronto para enviar.",
+    "emptyCart": "Seu carrinho está vazio",
+    "addToCart": "Adicionar à missão",
+    "viewCart": "Ver carrinho",
+    "confirmOrder": "Enviar pedido no WhatsApp",
+    "customizeTitle": "Monte seu milkshake",
+    "sizeLabel": "Tamanho",
+    "fromPrice": "A partir de"
+  },
+  "sizes": [
+    {
+      "id": "330",
+      "label": "330ml",
+      "price": 14.9
+    },
+    {
+      "id": "550",
+      "label": "550ml",
+      "price": 19.9
+    }
+  ],
+  "modifierGroups": [
+    {
+      "id": "calda",
+      "name": "Calda",
+      "required": true,
+      "min": 1,
+      "max": 1,
+      "options": [
+        {
+          "id": "calda-morango",
+          "name": "Morango",
+          "price": 0
+        },
+        {
+          "id": "calda-chocolate",
+          "name": "Chocolate",
+          "price": 0
+        },
+        {
+          "id": "calda-caramelo",
+          "name": "Caramelo",
+          "price": 0
+        },
+        {
+          "id": "calda-leite-condensado",
+          "name": "Leite condensado",
+          "price": 0
+        },
+        {
+          "id": "sem-calda",
+          "name": "Sem calda",
+          "price": 0
+        }
+      ]
+    },
+    {
+      "id": "extras",
+      "name": "Adicionais",
+      "required": false,
+      "min": 0,
+      "max": 10,
+      "options": [
+        {
+          "id": "chantilly",
+          "name": "Chantilly extra",
+          "price": 2
+        },
+        {
+          "id": "oreo",
+          "name": "Oreo",
+          "price": 3
+        },
+        {
+          "id": "amendoim",
+          "name": "Amendoim",
+          "price": 2
+        },
+        {
+          "id": "granulado",
+          "name": "Granulado",
+          "price": 1.5
+        },
+        {
+          "id": "leite-po",
+          "name": "Leite em pó",
+          "price": 2
+        },
+        {
+          "id": "ovomaltine",
+          "name": "Ovomaltine",
+          "price": 3
+        },
+        {
+          "id": "calda-extra",
+          "name": "Calda extra",
+          "price": 2
+        }
+      ]
+    }
+  ],
+  "flavors": [
+    {
+      "id": "marte",
+      "name": "Marte",
+      "description": "Morango cremoso da galáxia com base espacial e calda alienígena",
+      "imageUrl": "https://instasize.com/api/image/74059d6e6f562be61af401d6da0fe1850658489a9bc15d7f06dbc4c0190bb945.jpeg",
+      "category": "Clássicos",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "netuno",
+      "name": "Netuno",
+      "description": "Baunilha espacial azul com brilho cósmico e chantilly",
+      "imageUrl": "https://instasize.com/api/image/b432abdfcba62bccf0023ad361c95c0c9b4772718b6986a29acbd1ba6a76f96c.jpeg",
+      "category": "Clássicos",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "via-lactea",
+      "name": "Via Láctea",
+      "description": "Base cremosa de leite em pó com chocolate e Oreo, finalizada com chantilly e pedaços de biscoito",
+      "imageUrl": "https://instasize.com/api/image/3d55753ef0f9338c6a150e179d95062b78ba94658964ee33c1bd60216cfba685.jpeg",
+      "category": "Mais Pedidos",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "eclipse",
+      "name": "Eclipse",
+      "description": "Chocolate meio amargo equilibrado, coberto com chantilly e finalização intensa de chocolate",
+      "imageUrl": "https://instasize.com/api/image/0ec4c7d2bf9435d3b24f6e5bbb996b8837ff061d20e69181fd401004685234a1.jpeg",
+      "category": "Clássicos",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "meteoro-crocante",
+      "name": "Meteoro Crocante",
+      "description": "Chocolate cremoso com pedaços crocantes, finalizado com chantilly e extra de crocância no topo",
+      "imageUrl": "https://instasize.com/api/image/75787b27473a523e73a432a4a7824ccba5dc9fe0fe75d4616c5ab336353968ae.jpeg",
+      "category": "Mais Pedidos",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "jupiter",
+      "name": "Júpiter",
+      "description": "Chocolate com amendoim, cremoso e intenso, com finalização crocante",
+      "imageUrl": "https://res.cloudinary.com/ddc8f5ani/image/upload/f_auto,q_auto/1000217683_rxduxg",
+      "category": "Premium",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "saturno",
+      "name": "Saturno",
+      "description": "Milkshake especial com visual cósmico e sabor marcante da casa",
+      "imageUrl": "https://instasize.com/api/image/1d35e4d4d1ac7bc8dcbfa0970f6e75970b4d5454f6dc1abef6cf1b85b4623910.jpeg",
+      "category": "Premium",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "plutao",
+      "name": "Plutão",
+      "description": "Sabor misterioso, gelado e distante, feito para quem quer experimentar algo diferente",
+      "imageUrl": "https://res.cloudinary.com/ddc8f5ani/image/upload/f_auto,q_auto/1000217757_htrkrs",
+      "category": "Misterioso da Semana",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "area-51",
+      "name": "Área 51",
+      "description": "Receita secreta da nave, cremosa e surpreendente",
+      "imageUrl": "https://instasize.com/api/image/8286505db2553ee7feea7ab8c5a4d676d4d393aa870e72edb9992822b9d55584.jpeg",
+      "category": "Misterioso da Semana",
+      "available": true,
+      "customPrices": {}
+    },
+    {
+      "id": "materia-escura",
+      "name": "Matéria Escura",
+      "description": "Chocolate intenso sem amendoim, escuro, cremoso e misterioso",
+      "imageUrl": "https://instasize.com/api/image/d8570c6140c61daf4146c4804b8b31b8e99117524b356050a5d210c7367616f5.jpeg",
+      "category": "Premium",
+      "available": true,
+      "customPrices": {}
+    }
+  ]
+}
