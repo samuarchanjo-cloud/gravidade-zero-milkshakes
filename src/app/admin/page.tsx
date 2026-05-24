@@ -195,13 +195,10 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gz-secondary)]">
-                  Comando financeiro
-                </p>
-                <h2 className="mt-1 text-xl font-bold">Resumo das vendas</h2>
+                <h2 className="text-xl font-bold">Financeiro</h2>
               </div>
               <p className="text-sm text-[var(--gz-muted)]">
-                Dados mockados, prontos para futura integração com pedidos reais.
+                Resumo principal de vendas, pagamentos e pedidos recentes.
               </p>
             </div>
 
@@ -215,7 +212,7 @@ export default function AdminPage() {
             <div className="grid gap-4 lg:grid-cols-[0.9fr_1.4fr]">
               <div className="rounded-xl border border-white/10 bg-black/20 p-4">
                 <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gz-muted)]">
-                  Por pagamento
+                  Total por forma de pagamento
                 </h3>
                 <div className="mt-4 space-y-3">
                   {paymentTotals.map((item) => (
@@ -708,17 +705,19 @@ export default function AdminPage() {
         )}
       </section>
 
-      <div className="mt-6 flex items-center gap-4">
-        <button
-          type="button"
-          onClick={save}
-          className="rounded-full px-6 py-3 font-semibold text-white"
-          style={{ background: "var(--gz-primary)" }}
-        >
-          Salvar alterações
-        </button>
-        {status && <p className="text-sm text-[var(--gz-muted)]">{status}</p>}
-      </div>
+      {tab !== "finance" && (
+        <div className="mt-6 flex items-center gap-4">
+          <button
+            type="button"
+            onClick={save}
+            className="rounded-full px-6 py-3 font-semibold text-white"
+            style={{ background: "var(--gz-primary)" }}
+          >
+            Salvar alterações
+          </button>
+          {status && <p className="text-sm text-[var(--gz-muted)]">{status}</p>}
+        </div>
+      )}
     </main>
   );
 }
