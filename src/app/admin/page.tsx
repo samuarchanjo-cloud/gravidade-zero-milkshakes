@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Flavor, StoreConfig } from "@/lib/types";
+import { mockAdminOrders, type AdminPaymentMethod } from "./mockOrders";
 
 type Tab =
+  | "finance"
   | "branding"
   | "theme"
   | "business"
@@ -25,10 +27,40 @@ function newFlavor(): Flavor {
   };
 }
 
+const paymentMethods: AdminPaymentMethod[] = ["Pix", "Dinheiro", "Débito", "Crédito"];
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function isSameDay(date: Date, reference: Date) {
+  return (
+    date.getFullYear() === reference.getFullYear() &&
+    date.getMonth() === reference.getMonth() &&
+    date.getDate() === reference.getDate()
+  );
+}
+
+function isSameMonth(date: Date, reference: Date) {
+  return (
+    date.getFullYear() === reference.getFullYear() &&
+    date.getMonth() === reference.getMonth()
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [config, setConfig] = useState<StoreConfig | null>(null);
-  const [tab, setTab] = useState<Tab>("branding");
+  const [tab, setTab] = useState<Tab>("finance");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -86,6 +118,7 @@ export default function AdminPage() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: "finance", label: "Financeiro" },
     { id: "branding", label: "Marca" },
     { id: "theme", label: "Cores" },
     { id: "business", label: "Negócio" },
@@ -96,8 +129,29 @@ export default function AdminPage() {
     { id: "modifiers", label: "Adicionais" },
   ];
 
+  const now = new Date();
+  const orders = mockAdminOrders.map((order) => ({
+    ...order,
+    createdDate: new Date(order.createdAt),
+  }));
+  const todayOrders = orders.filter((order) => isSameDay(order.createdDate, now));
+  const monthOrders = orders.filter((order) => isSameMonth(order.createdDate, now));
+  const dayRevenue = todayOrders.reduce((sum, order) => sum + order.total, 0);
+  const monthRevenue = monthOrders.reduce((sum, order) => sum + order.total, 0);
+  const totalOrders = monthOrders.length;
+  const averageTicket = totalOrders > 0 ? monthRevenue / totalOrders : 0;
+  const paymentTotals = paymentMethods.map((method) => ({
+    method,
+    total: monthOrders
+      .filter((order) => order.paymentMethod === method)
+      .reduce((sum, order) => sum + order.total, 0),
+  }));
+  const recentOrders = [...orders]
+    .sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())
+    .slice(0, 6);
+
   return (
-    <main className="mx-auto min-h-dvh max-w-2xl px-4 py-6">
+    <main className="gz-cosmic-page mx-auto min-h-dvh max-w-5xl px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Painel — {config.branding.name}</h1>
@@ -136,7 +190,85 @@ export default function AdminPage() {
         ))}
       </nav>
 
-      <section className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-[var(--gz-surface)] p-4">
+      <section className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-[var(--gz-surface)]/90 p-4 shadow-2xl shadow-purple-950/20 backdrop-blur">
+        {tab === "finance" && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gz-secondary)]">
+                  Comando financeiro
+                </p>
+                <h2 className="mt-1 text-xl font-bold">Resumo das vendas</h2>
+              </div>
+              <p className="text-sm text-[var(--gz-muted)]">
+                Dados mockados, prontos para futura integração com pedidos reais.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MetricCard label="Faturamento hoje" value={currencyFormatter.format(dayRevenue)} />
+              <MetricCard label="Faturamento do mês" value={currencyFormatter.format(monthRevenue)} />
+              <MetricCard label="Pedidos no mês" value={String(totalOrders)} />
+              <MetricCard label="Ticket médio" value={currencyFormatter.format(averageTicket)} />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.4fr]">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gz-muted)]">
+                  Por pagamento
+                </h3>
+                <div className="mt-4 space-y-3">
+                  {paymentTotals.map((item) => (
+                    <div
+                      key={item.method}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3"
+                    >
+                      <span className="text-sm font-medium">{item.method}</span>
+                      <span className="text-sm font-semibold text-[var(--gz-secondary)]">
+                        {currencyFormatter.format(item.total)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gz-muted)]">
+                    Pedidos recentes
+                  </h3>
+                  <span className="text-xs text-[var(--gz-muted)]">
+                    {recentOrders.length} últimos
+                  </span>
+                </div>
+                <div className="divide-y divide-white/10">
+                  {recentOrders.map((order) => (
+                    <article
+                      key={order.id}
+                      className="grid gap-3 px-4 py-4 sm:grid-cols-[1fr_auto] sm:items-center"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <strong>{order.customerName}</strong>
+                          <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-[var(--gz-muted)]">
+                            {order.status}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-[var(--gz-muted)]">
+                          {dateTimeFormatter.format(order.createdDate)} · {order.paymentMethod}
+                        </p>
+                      </div>
+                      <strong className="text-[var(--gz-secondary)]">
+                        {currencyFormatter.format(order.total)}
+                      </strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {tab === "branding" && (
           <>
             <Field
@@ -588,6 +720,17 @@ export default function AdminPage() {
         {status && <p className="text-sm text-[var(--gz-muted)]">{status}</p>}
       </div>
     </main>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gz-muted)]">
+        {label}
+      </p>
+      <strong className="mt-3 block text-2xl text-white">{value}</strong>
+    </div>
   );
 }
 
