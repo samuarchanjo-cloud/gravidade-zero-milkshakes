@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const fulfillment = normalizeFulfillment(body.fulfillment);
     const subtotal = numberOrZero(body.subtotal);
     const deliveryFee = numberOrZero(body.deliveryFee);
+    const paymentFee = numberOrZero(body.paymentFee);
     const total = numberOrZero(body.total) || subtotal + deliveryFee;
     const paymentMethod = normalizePaymentMethod(body.paymentMethod);
 
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       items,
       subtotal,
       deliveryFee,
+      paymentFee,
       total,
       notes: body.notes?.trim() ?? "",
     });
@@ -57,8 +59,8 @@ function normalizePaymentMethod(value: unknown): OrderPaymentMethod | null {
   if (value === "Cartão" || value === "Cartao" || value === "cartao") {
     return "Cartão";
   }
-  if (value === "Débito" || value === "Debito") return "Débito";
-  if (value === "Crédito" || value === "Credito") return "Crédito";
+  if (value === "Débito" || value === "Debito" || value === "debito") return "Débito";
+  if (value === "Crédito" || value === "Credito" || value === "credito") return "Crédito";
   return null;
 }
 

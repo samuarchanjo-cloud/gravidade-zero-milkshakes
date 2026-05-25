@@ -1,5 +1,6 @@
 import type { Business, CartItem, CheckoutData } from "./types";
-import { cartLineTotal, formatMoney } from "./pricing";
+import { paymentLabel } from "./payment";
+import { formatMoney } from "./pricing";
 
 const STORE_NAME = "Gravidade Zero Milkshakes";
 
@@ -13,17 +14,18 @@ export function buildOrderMessage(
   items: CartItem[],
   checkout: CheckoutData,
   business: Business,
-  _subtotal: number,
+  subtotal: number,
   total: number,
-  deliveryFee: number
+  deliveryFee: number,
+  paymentFee: number
 ): string {
   const lines: string[] = [
-    `🚀 *${STORE_NAME}*`,
+    `*${STORE_NAME}*`,
     "",
-    `👤 *Cliente:* ${checkout.customerName.trim()}`,
-    `📞 *Telefone:* ${checkout.customerPhone.trim()}`,
+    `*Cliente:* ${checkout.customerName.trim()}`,
+    `*Telefone:* ${checkout.customerPhone.trim()}`,
     "",
-    "📦 *Itens:*",
+    "*Itens:*",
   ];
 
   for (const item of items) {
@@ -31,8 +33,8 @@ export function buildOrderMessage(
     const extrasText =
       extras.length > 0 ? extras.map((e) => e.name).join(", ") : "Nenhum";
     lines.push(
-      `• ${item.quantity}x ${item.flavorName} (${item.sizeLabel})`,
-      `  Calda: ${calda?.name ?? "—"}`,
+      `- ${item.quantity}x ${item.flavorName} (${item.sizeLabel})`,
+      `  Calda: ${calda?.name ?? "-"}`,
       `  Adicionais: ${extrasText}`
     );
     if (item.observation?.trim()) {
@@ -44,53 +46,50 @@ export function buildOrderMessage(
 
   const tipo =
     checkout.fulfillment === "delivery" ? "Delivery" : "Retirada no local";
-  lines.push(`🚚 *Entrega:* ${tipo}`);
+  lines.push(`*Entrega:* ${tipo}`);
 
   if (checkout.fulfillment === "delivery") {
-    lines.push(`📍 *Endereço:* ${checkout.address.trim()}`);
+    lines.push(`*Endereco:* ${checkout.address.trim()}`);
     if (checkout.reference.trim()) {
-      lines.push(`📌 *Referência:* ${checkout.reference.trim()}`);
+      lines.push(`*Referencia:* ${checkout.reference.trim()}`);
     }
   } else {
-    lines.push(`📍 *Retirada:* ${business.address}`);
+    lines.push(`*Retirada:* ${business.address}`);
   }
 
-  lines.push(`💳 *Pagamento:* ${paymentLabel(checkout.paymentMethod)}`);
+  lines.push(`*Pagamento:* ${paymentLabel(checkout.paymentMethod)}`);
+
+  if (checkout.paymentMethod === "pix") {
+    lines.push("Pagamento via Pix - aguardando comprovante");
+  }
 
   if (checkout.paymentMethod === "dinheiro") {
     if (checkout.needsChange && checkout.changeFor.trim()) {
-      lines.push(`💰 *Troco:* para ${checkout.changeFor.trim()}`);
+      lines.push(`*Troco:* para ${checkout.changeFor.trim()}`);
     } else {
       lines.push(
-        `💰 *Troco:* ${checkout.needsChange ? "Sim (valor não informado)" : "Não precisa"}`
+        `*Troco:* ${checkout.needsChange ? "Sim (valor nao informado)" : "Nao precisa"}`
       );
     }
   }
 
   if (deliveryFee > 0) {
-    lines.push(`🛵 *Taxa entrega:* ${formatMoney(deliveryFee, business.currency)}`);
+    lines.push(`*Taxa entrega:* ${formatMoney(deliveryFee, business.currency)}`);
   }
+
+  lines.push(
+    `*Subtotal:* ${formatMoney(subtotal, business.currency)}`,
+    `*Taxa aplicada:* ${formatMoney(paymentFee, business.currency)}`,
+    `*Valor final total:* ${formatMoney(total, business.currency)}`
+  );
 
   if (checkout.notes.trim()) {
-    lines.push(`📝 *Obs. pedido:* ${checkout.notes.trim()}`);
+    lines.push(`*Obs. pedido:* ${checkout.notes.trim()}`);
   }
 
-  lines.push("", `💵 *Total:* ${formatMoney(total, business.currency)}`);
+  lines.push("", `*Total:* ${formatMoney(total, business.currency)}`);
 
   return lines.join("\n");
-}
-
-function paymentLabel(method: CheckoutData["paymentMethod"]): string {
-  switch (method) {
-    case "pix":
-      return "Pix";
-    case "dinheiro":
-      return "Dinheiro";
-    case "cartao":
-      return "Cartão";
-    default:
-      return "—";
-  }
 }
 
 export function whatsappOrderUrl(number: string, message: string): string {

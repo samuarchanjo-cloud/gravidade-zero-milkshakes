@@ -114,7 +114,7 @@ export type CartItem = {
 
 export type FulfillmentType = "delivery" | "pickup";
 
-export type PaymentMethod = "pix" | "dinheiro" | "cartao";
+export type PaymentMethod = "pix" | "dinheiro" | "debito" | "credito";
 
 export type CheckoutData = {
   customerName: string;
@@ -163,6 +163,7 @@ export type CustomerOrder = {
   items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
+  paymentFee?: number;
   total: number;
   createdAt: string;
   status: OrderStatus;

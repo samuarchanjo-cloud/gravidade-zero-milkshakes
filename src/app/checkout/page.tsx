@@ -10,6 +10,14 @@ import {
   updateLineQuantity,
 } from "@/lib/cart";
 import { buildClientOrder, saveClientOrder } from "@/lib/clientOrders";
+import {
+  PIX_KEY,
+  PIX_KEY_TYPE,
+  PIX_RECEIVER,
+  calculatePaymentFee,
+  paymentFeeLabel,
+  pixQrCodeUrl,
+} from "@/lib/payment";
 import { cartLineTotal, formatMoney } from "@/lib/pricing";
 import type {
   CartItem,
@@ -45,8 +53,10 @@ function paymentLabel(method: PaymentMethod): CustomerOrder["paymentMethod"] {
       return "Pix";
     case "dinheiro":
       return "Dinheiro";
-    case "cartao":
-      return "Cartão";
+    case "debito":
+      return "Débito";
+    case "credito":
+      return "Crédito";
   }
 }
 
@@ -55,6 +65,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [checkout, setCheckout] = useState<CheckoutData>(emptyCheckout);
   const [error, setError] = useState("");
+  const [pixCopied, setPixCopied] = useState(false);
 
   useEffect(() => {
     setCart(loadCart());
@@ -67,13 +78,26 @@ export default function CheckoutPage() {
     return config.business.deliveryFee;
   }, [config, checkout.fulfillment]);
 
-  const total = subtotal + deliveryFee;
+  const orderTotal = subtotal + deliveryFee;
+  const paymentFee = calculatePaymentFee(orderTotal, checkout.paymentMethod);
+  const finalTotal = orderTotal + paymentFee;
+  const qrCodeUrl = pixQrCodeUrl(220);
 
   function setField<K extends keyof CheckoutData>(
     key: K,
     value: CheckoutData[K]
   ) {
     setCheckout((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function copyPixKey() {
+    try {
+      await navigator.clipboard.writeText(PIX_KEY);
+      setPixCopied(true);
+      window.setTimeout(() => setPixCopied(false), 3500);
+    } catch {
+      setError("Nao foi possivel copiar a chave Pix automaticamente.");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -127,7 +151,8 @@ export default function CheckoutPage() {
       })),
       subtotal,
       deliveryFee,
-      total,
+      paymentFee,
+      total: finalTotal,
       notes: checkout.notes,
     };
 
@@ -155,8 +180,9 @@ export default function CheckoutPage() {
       checkout,
       config.business,
       subtotal,
-      total,
-      deliveryFee
+      finalTotal,
+      deliveryFee,
+      paymentFee
     );
 
     const url = whatsappOrderUrl(config.business.whatsappNumber, message);
@@ -290,10 +316,14 @@ export default function CheckoutPage() {
                 <span>{formatMoney(deliveryFee)}</span>
               </div>
             )}
+            <div className="mt-2 flex justify-between text-[var(--gz-muted)]">
+              <span>{paymentFeeLabel(checkout.paymentMethod)}</span>
+              <span>{formatMoney(paymentFee)}</span>
+            </div>
             <div className="mt-2 flex justify-between text-lg font-bold">
-              <span>Total</span>
+              <span>Total final</span>
               <span style={{ color: "var(--gz-secondary)" }}>
-                {formatMoney(total)}
+                {formatMoney(finalTotal)}
               </span>
             </div>
           </div>
@@ -394,7 +424,8 @@ export default function CheckoutPage() {
                 [
                   ["pix", "Pix"],
                   ["dinheiro", "Dinheiro"],
-                  ["cartao", "Cartão"],
+                  ["debito", "Débito"],
+                  ["credito", "Crédito"],
                 ] as [PaymentMethod, string][]
               ).map(([value, label]) => (
                 <label
@@ -412,6 +443,66 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </fieldset>
+
+            {checkout.paymentMethod === "pix" && (
+              <section className="rounded-2xl border border-[var(--gz-primary)]/35 bg-black/45 p-4 shadow-2xl shadow-purple-950/25">
+                <div className="text-center">
+                  <h2 className="text-lg font-black text-white">
+                    Pagamento via Pix
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--gz-muted)]">
+                    Valor final: {formatMoney(finalTotal)}
+                  </p>
+                </div>
+
+                <div className="mx-auto mt-4 flex w-full max-w-[260px] justify-center rounded-2xl bg-white p-4">
+                  <img
+                    src={qrCodeUrl}
+                    alt="QR Code Pix"
+                    width={220}
+                    height={220}
+                    className="h-auto w-full max-w-[220px]"
+                  />
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm">
+                  <div className="flex justify-between gap-3 text-white">
+                    <span className="text-[var(--gz-muted)]">Recebedor</span>
+                    <strong className="text-right">{PIX_RECEIVER}</strong>
+                  </div>
+                  <div className="mt-2 flex justify-between gap-3 text-white">
+                    <span className="text-[var(--gz-muted)]">
+                      Chave Pix {PIX_KEY_TYPE}
+                    </span>
+                    <strong className="text-right">{PIX_KEY}</strong>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={copyPixKey}
+                  className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-black uppercase tracking-wide text-white active:scale-[0.98]"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--gz-primary), color-mix(in srgb, var(--gz-secondary) 42%, var(--gz-primary)))",
+                    boxShadow: "0 0 22px rgba(168, 85, 247, 0.35)",
+                  }}
+                >
+                  Copiar chave Pix
+                </button>
+
+                {pixCopied && (
+                  <p className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-center text-sm font-semibold text-emerald-200">
+                    Chave Pix copiada com sucesso
+                  </p>
+                )}
+
+                <p className="mt-4 text-center text-sm leading-relaxed text-[var(--gz-muted)]">
+                  Após realizar o pagamento, envie o comprovante pelo WhatsApp
+                  para agilizar a confirmação do seu pedido.
+                </p>
+              </section>
+            )}
 
             {checkout.paymentMethod === "dinheiro" && (
               <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
