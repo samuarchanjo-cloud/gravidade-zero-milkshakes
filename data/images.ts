@@ -8,7 +8,8 @@ export const PLACEHOLDER_PRODUCT =
 
 export const storeImages = {
   logo: "https://instasize.com/p/e204d36e3002c4beb3cf26e5d8690962ce5f95c1780784b594b7608d7ac49ce4",
-  banner: "https://instasize.com/p/1dcd2df37885311b4b942acbf1cca637f235d4f6c65edc1d869643a0dcc282a3",
+  banner:
+    "https://res.cloudinary.com/ddc8f5ani/image/upload/f_auto,q_auto/ChatGPT_Image_25_de_mai._de_2026_12_31_11_ek9efq",
   products: {
     marte: "https://instasize.com/p/74059d6e6f562be61af401d6da0fe1850658489a9bc15d7f06dbc4c0190bb945",
     netuno:
@@ -38,4 +39,3 @@ export function getProductImage(id: string): string {
   const url = storeImages.products[id as ProductImageId];
   return url?.trim() || PLACEHOLDER_PRODUCT;
 }
-
