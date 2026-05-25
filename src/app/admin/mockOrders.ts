@@ -1,84 +1,128 @@
-export type AdminPaymentMethod = "Pix" | "Dinheiro" | "Débito" | "Crédito";
+import type { CustomerOrder, OrderPaymentMethod, OrderStatus } from "@/lib/types";
 
-export type AdminOrderStatus =
-  | "Pedido recebido"
-  | "Pedido aceito"
-  | "Em preparo"
-  | "Saiu para entrega"
-  | "Finalizado";
-
-export type AdminOrder = {
-  id: string;
-  customerName: string;
-  total: number;
-  paymentMethod: AdminPaymentMethod;
-  createdAt: string;
-  status: AdminOrderStatus;
-};
+export type AdminPaymentMethod = OrderPaymentMethod;
+export type AdminOrderStatus = OrderStatus;
+export type AdminOrder = CustomerOrder;
 
 export const mockAdminOrders: AdminOrder[] = [
   {
     id: "gz-1089",
     customerName: "Mariana Souza",
-    total: 42.8,
+    customerPhone: "(21) 99999-1089",
+    fulfillment: "delivery",
+    address: "Rua das Estrelas, 42",
+    reference: "Próximo à praça",
     paymentMethod: "Pix",
+    items: [
+      {
+        flavorName: "Milkshake Galáxia",
+        sizeLabel: "550ml",
+        quantity: 2,
+        unitPrice: 21.4,
+        total: 42.8,
+        modifiers: [],
+      },
+    ],
+    subtotal: 42.8,
+    deliveryFee: 0,
+    total: 42.8,
     createdAt: "2026-05-24T20:18:00-03:00",
     status: "Em preparo",
   },
   {
     id: "gz-1088",
     customerName: "Lucas Andrade",
+    customerPhone: "(21) 99999-1088",
+    fulfillment: "pickup",
+    address: "",
+    reference: "",
+    paymentMethod: "Cartão",
+    items: [
+      {
+        flavorName: "Milkshake Órbita",
+        sizeLabel: "330ml",
+        quantity: 1,
+        unitPrice: 27.9,
+        total: 27.9,
+        modifiers: [],
+      },
+    ],
+    subtotal: 27.9,
+    deliveryFee: 0,
     total: 27.9,
-    paymentMethod: "Crédito",
     createdAt: "2026-05-24T19:47:00-03:00",
     status: "Pedido recebido",
   },
   {
     id: "gz-1087",
     customerName: "Renata Lima",
-    total: 62.7,
+    customerPhone: "(21) 99999-1087",
+    fulfillment: "delivery",
+    address: "Av. Lunar, 700",
+    reference: "",
     paymentMethod: "Dinheiro",
+    items: [
+      {
+        flavorName: "Milkshake Cometa",
+        sizeLabel: "550ml",
+        quantity: 3,
+        unitPrice: 20.9,
+        total: 62.7,
+        modifiers: [],
+      },
+    ],
+    subtotal: 62.7,
+    deliveryFee: 0,
+    total: 62.7,
     createdAt: "2026-05-24T18:52:00-03:00",
     status: "Saiu para entrega",
   },
   {
     id: "gz-1086",
     customerName: "Thiago Martins",
-    total: 19.9,
+    customerPhone: "(21) 99999-1086",
+    fulfillment: "pickup",
+    address: "",
+    reference: "",
     paymentMethod: "Débito",
+    items: [
+      {
+        flavorName: "Milkshake Nebulosa",
+        sizeLabel: "330ml",
+        quantity: 1,
+        unitPrice: 19.9,
+        total: 19.9,
+        modifiers: [],
+      },
+    ],
+    subtotal: 19.9,
+    deliveryFee: 0,
+    total: 19.9,
     createdAt: "2026-05-24T17:36:00-03:00",
     status: "Pedido aceito",
   },
   {
     id: "gz-1085",
     customerName: "Camila Rocha",
-    total: 39.8,
+    customerPhone: "(21) 99999-1085",
+    fulfillment: "delivery",
+    address: "Rua Meteoro, 15",
+    reference: "",
     paymentMethod: "Pix",
+    items: [
+      {
+        flavorName: "Milkshake Saturno",
+        sizeLabel: "550ml",
+        quantity: 2,
+        unitPrice: 19.9,
+        total: 39.8,
+        modifiers: [],
+      },
+    ],
+    subtotal: 39.8,
+    deliveryFee: 0,
+    total: 39.8,
     createdAt: "2026-05-23T21:12:00-03:00",
-    status: "Finalizado",
-  },
-  {
-    id: "gz-1084",
-    customerName: "Pedro Nunes",
-    total: 49.7,
-    paymentMethod: "Crédito",
-    createdAt: "2026-05-22T20:31:00-03:00",
-    status: "Finalizado",
-  },
-  {
-    id: "gz-1083",
-    customerName: "Aline Costa",
-    total: 34.9,
-    paymentMethod: "Débito",
-    createdAt: "2026-05-20T16:08:00-03:00",
-    status: "Finalizado",
-  },
-  {
-    id: "gz-1082",
-    customerName: "Bruno Ferreira",
-    total: 24.9,
-    paymentMethod: "Dinheiro",
-    createdAt: "2026-05-18T19:20:00-03:00",
     status: "Finalizado",
   },
 ];

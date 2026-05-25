@@ -13,6 +13,7 @@ import { cartLineTotal, formatMoney } from "@/lib/pricing";
 import type {
   CartItem,
   CheckoutData,
+  CustomerOrder,
   FulfillmentType,
   PaymentMethod,
 } from "@/lib/types";
@@ -21,6 +22,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 
 const emptyCheckout: CheckoutData = {
   customerName: "",
+  customerPhone: "",
   fulfillment: "pickup",
   address: "",
   reference: "",
@@ -34,6 +36,17 @@ function itemModifiersSummary(item: CartItem) {
   const calda = item.modifiers.find((m) => m.groupId === "calda");
   const extras = item.modifiers.filter((m) => m.groupId === "extras");
   return { calda, extras };
+}
+
+function paymentLabel(method: PaymentMethod): CustomerOrder["paymentMethod"] {
+  switch (method) {
+    case "pix":
+      return "Pix";
+    case "dinheiro":
+      return "Dinheiro";
+    case "cartao":
+      return "Cartão";
+  }
 }
 
 export default function CheckoutPage() {
@@ -62,7 +75,7 @@ export default function CheckoutPage() {
     setCheckout((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!config) return;
@@ -72,6 +85,10 @@ export default function CheckoutPage() {
     }
     if (!checkout.customerName.trim()) {
       setError("Informe seu nome.");
+      return;
+    }
+    if (!checkout.customerPhone.trim()) {
+      setError("Informe seu telefone.");
       return;
     }
     if (!checkout.paymentMethod) {
@@ -88,6 +105,39 @@ export default function CheckoutPage() {
       !checkout.changeFor.trim()
     ) {
       setError("Informe o valor para troco.");
+      return;
+    }
+
+    const orderPayload: Omit<CustomerOrder, "id" | "createdAt" | "status"> = {
+      customerName: checkout.customerName,
+      customerPhone: checkout.customerPhone,
+      fulfillment: checkout.fulfillment,
+      address: checkout.fulfillment === "delivery" ? checkout.address : "",
+      reference: checkout.reference,
+      paymentMethod: paymentLabel(checkout.paymentMethod),
+      items: cart.map((item) => ({
+        flavorName: item.flavorName,
+        sizeLabel: item.sizeLabel,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: cartLineTotal(item),
+        modifiers: item.modifiers,
+        observation: item.observation,
+      })),
+      subtotal,
+      deliveryFee,
+      total,
+      notes: checkout.notes,
+    };
+
+    const saveResponse = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    });
+
+    if (!saveResponse.ok) {
+      setError("Não foi possível registrar o pedido. Tente novamente.");
       return;
     }
 
@@ -250,6 +300,20 @@ export default function CheckoutPage() {
                 onChange={(e) => setField("customerName", e.target.value)}
                 className="mt-1 w-full min-h-[48px] rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-base text-white"
                 placeholder="Seu nome"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm text-[var(--gz-muted)]">
+                Telefone do cliente *
+              </span>
+              <input
+                required
+                inputMode="tel"
+                value={checkout.customerPhone}
+                onChange={(e) => setField("customerPhone", e.target.value)}
+                className="mt-1 w-full min-h-[48px] rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-base text-white"
+                placeholder="(21) 99999-9999"
               />
             </label>
 

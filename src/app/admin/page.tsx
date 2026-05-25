@@ -33,7 +33,13 @@ function newFlavor(): Flavor {
   };
 }
 
-const paymentMethods: AdminPaymentMethod[] = ["Pix", "Dinheiro", "Débito", "Crédito"];
+const paymentMethods: AdminPaymentMethod[] = [
+  "Pix",
+  "Dinheiro",
+  "Cartão",
+  "Débito",
+  "Crédito",
+];
 
 const orderStatuses: AdminOrderStatus[] = [
   "Pedido recebido",
@@ -114,6 +120,7 @@ export default function AdminPage() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [adminOrders, setAdminOrders] = useState<AdminOrder[]>(mockAdminOrders);
+  const [usingMockOrders, setUsingMockOrders] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/config")
@@ -125,8 +132,20 @@ export default function AdminPage() {
         if (!res.ok) throw new Error("Erro ao carregar");
         return (await res.json()) as StoreConfig;
       })
-      .then((data) => {
-        if (data) setConfig(data);
+      .then(async (data) => {
+        if (!data) return;
+        setConfig(data);
+
+        const ordersRes = await fetch("/api/admin/orders");
+        if (!ordersRes.ok) {
+          setUsingMockOrders(true);
+          setAdminOrders(mockAdminOrders);
+          return;
+        }
+
+        const savedOrders = (await ordersRes.json()) as AdminOrder[];
+        setUsingMockOrders(savedOrders.length === 0);
+        setAdminOrders(savedOrders.length > 0 ? savedOrders : mockAdminOrders);
       })
       .catch(() => setStatus("Não foi possível carregar o painel."))
       .finally(() => setLoading(false));
@@ -152,18 +171,30 @@ export default function AdminPage() {
     router.replace("/admin/login");
   }
 
-  function updateOrderStatus(orderId: string, nextStatus: AdminOrderStatus) {
+  async function updateOrderStatus(orderId: string, nextStatus: AdminOrderStatus) {
     setAdminOrders((currentOrders) =>
       currentOrders.map((order) =>
         order.id === orderId ? { ...order, status: nextStatus } : order
       )
     );
+
+    if (usingMockOrders) return;
+
+    const res = await fetch("/api/admin/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: orderId, status: nextStatus }),
+    });
+
+    if (!res.ok) {
+      setStatus("Não foi possível atualizar o status do pedido.");
+    }
   }
 
   function advanceOrderStatus(order: AdminOrder) {
     const currentIndex = orderStatuses.indexOf(order.status);
     const nextStatus = orderStatuses[Math.min(currentIndex + 1, orderStatuses.length - 1)];
-    updateOrderStatus(order.id, nextStatus);
+    void updateOrderStatus(order.id, nextStatus);
   }
 
   if (loading) {
@@ -196,10 +227,12 @@ export default function AdminPage() {
   ];
 
   const now = new Date();
-  const orders = adminOrders.map((order) => ({
-    ...order,
-    createdDate: new Date(order.createdAt),
-  }));
+  const orders = adminOrders
+    .map((order) => ({
+      ...order,
+      createdDate: new Date(order.createdAt),
+    }))
+    .sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
   const todayOrders = orders.filter((order) => isSameDay(order.createdDate, now));
   const monthOrders = orders.filter((order) => isSameMonth(order.createdDate, now));
   const dayRevenue = todayOrders.reduce((sum, order) => sum + order.total, 0);
@@ -342,6 +375,11 @@ export default function AdminPage() {
                 <p className="mt-1 text-sm text-[var(--gz-muted)]">
                   Atualize o andamento de cada pedido para manter a operação alinhada.
                 </p>
+                {usingMockOrders && (
+                  <p className="mt-2 text-xs text-[var(--gz-muted)]">
+                    Exibindo exemplos porque ainda não há pedidos reais salvos.
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {statusCounts.map((item) => (
@@ -381,6 +419,29 @@ export default function AdminPage() {
                           {currencyFormatter.format(order.total)}
                         </span>
                       </p>
+                      <p className="mt-1 text-sm text-[var(--gz-muted)]">
+                        {order.customerPhone} ·{" "}
+                        {order.fulfillment === "delivery" ? "Delivery" : "Retirada"}
+                        {order.fulfillment === "delivery" && order.address
+                          ? ` · ${order.address}`
+                          : ""}
+                      </p>
+                      <div className="mt-3 space-y-1 text-xs text-white/75">
+                        {order.items.map((item, index) => (
+                          <p key={`${order.id}-${index}`}>
+                            {item.quantity}x {item.flavorName} ({item.sizeLabel})
+                            {item.modifiers.length > 0
+                              ? ` · ${item.modifiers.map((modifier) => modifier.name).join(", ")}`
+                              : ""}
+                            {item.observation?.trim() ? ` · Obs.: ${item.observation}` : ""}
+                          </p>
+                        ))}
+                        {order.notes?.trim() && (
+                          <p className="text-[var(--gz-secondary)]">
+                            Obs. pedido: {order.notes}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid gap-2 sm:min-w-72 sm:grid-cols-[1fr_auto]">
@@ -389,7 +450,7 @@ export default function AdminPage() {
                         <select
                           value={order.status}
                           onChange={(event) =>
-                            updateOrderStatus(
+                            void updateOrderStatus(
                               order.id,
                               event.target.value as AdminOrderStatus
                             )
@@ -421,6 +482,7 @@ export default function AdminPage() {
                 );
               })}
             </div>
+            {status && <p className="text-sm text-[var(--gz-muted)]">{status}</p>}
           </div>
         )}
 

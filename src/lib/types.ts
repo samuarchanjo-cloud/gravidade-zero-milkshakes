@@ -118,6 +118,7 @@ export type PaymentMethod = "pix" | "dinheiro" | "cartao";
 
 export type CheckoutData = {
   customerName: string;
+  customerPhone: string;
   fulfillment: FulfillmentType;
   address: string;
   reference: string;
@@ -125,4 +126,45 @@ export type CheckoutData = {
   needsChange: boolean;
   changeFor: string;
   notes: string;
+};
+
+export type OrderStatus =
+  | "Pedido recebido"
+  | "Pedido aceito"
+  | "Em preparo"
+  | "Saiu para entrega"
+  | "Finalizado";
+
+export type OrderPaymentMethod =
+  | "Pix"
+  | "Dinheiro"
+  | "Cartão"
+  | "Débito"
+  | "Crédito";
+
+export type OrderItem = {
+  flavorName: string;
+  sizeLabel: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  modifiers: SelectedModifier[];
+  observation?: string;
+};
+
+export type CustomerOrder = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  fulfillment: FulfillmentType;
+  address: string;
+  reference: string;
+  paymentMethod: OrderPaymentMethod;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  createdAt: string;
+  status: OrderStatus;
+  notes?: string;
 };

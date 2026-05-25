@@ -21,6 +21,7 @@ export function buildOrderMessage(
     `🚀 *${STORE_NAME}*`,
     "",
     `👤 *Cliente:* ${checkout.customerName.trim()}`,
+    `📞 *Telefone:* ${checkout.customerPhone.trim()}`,
     "",
     "📦 *Itens:*",
   ];
