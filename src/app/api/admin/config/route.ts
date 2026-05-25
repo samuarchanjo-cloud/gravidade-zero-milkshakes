@@ -3,6 +3,22 @@ import { isAuthenticated } from "@/lib/auth";
 import { readStore, writeStore } from "@/lib/store";
 import type { StoreConfig } from "@/lib/types";
 
+export const runtime = "nodejs";
+
+function logApiError(context: string, error: unknown) {
+  if (error instanceof Error) {
+    console.error(context, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+    });
+    return;
+  }
+
+  console.error(context, error);
+}
+
 export async function GET() {
   if (!(await isAuthenticated())) {
     console.warn("[admin/config] GET sem sessao valida.");
@@ -13,7 +29,7 @@ export async function GET() {
     const config = await readStore();
     return NextResponse.json(config);
   } catch (error) {
-    console.error("[admin/config] Erro ao ler configuracao:", error);
+    logApiError("[admin/config] Erro ao ler configuracao:", error);
     return NextResponse.json(
       { error: "Nao foi possivel carregar a configuracao." },
       { status: 500 }
@@ -55,7 +71,10 @@ async function saveConfig(request: Request, method: "PUT" | "POST") {
     await writeStore(body);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error(`[admin/config] Erro ao salvar configuracao via ${method}:`, error);
+    logApiError(
+      `[admin/config] Erro ao salvar configuracao via ${method}:`,
+      error
+    );
     return NextResponse.json(
       {
         error:

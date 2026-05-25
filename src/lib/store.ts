@@ -5,6 +5,81 @@ import { resolveImageUrl } from "./images";
 import type { Flavor, Product, StoreConfig } from "./types";
 
 const STORE_PATH = path.join(process.cwd(), "data", "store.json");
+const STORE_KEY = process.env.STORE_CONFIG_KEY ?? "gravidade-zero:store-config";
+
+type RedisRestResponse = {
+  result?: unknown;
+  error?: string;
+};
+
+function getRedisRestEnv():
+  | { url: string; token: string; key: string }
+  | null {
+  const url =
+    process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token =
+    process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) return null;
+
+  return {
+    url: url.replace(/\/$/, ""),
+    token,
+    key: STORE_KEY,
+  };
+}
+
+function serializeStore(config: StoreConfig): string {
+  const { products: _legacy, ...toSave } = config;
+  return JSON.stringify(toSave);
+}
+
+async function redisCommand<T>(
+  command: unknown[]
+): Promise<T | null> {
+  const env = getRedisRestEnv();
+  if (!env) return null;
+
+  const res = await fetch(env.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(command),
+    cache: "no-store",
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as RedisRestResponse;
+
+  if (!res.ok || payload.error) {
+    throw new Error(
+      `Redis REST ${String(command[0])} failed (${res.status}): ${
+        payload.error ?? res.statusText
+      }`
+    );
+  }
+
+  return (payload.result ?? null) as T | null;
+}
+
+async function readRemoteStore(): Promise<StoreConfig | null> {
+  const env = getRedisRestEnv();
+  if (!env) return null;
+
+  const result = await redisCommand<string>(["GET", env.key]);
+  if (!result) return null;
+
+  return JSON.parse(result) as StoreConfig;
+}
+
+async function writeRemoteStore(config: StoreConfig): Promise<boolean> {
+  const env = getRedisRestEnv();
+  if (!env) return false;
+
+  await redisCommand<string>(["SET", env.key, serializeStore(config)]);
+  return true;
+}
 
 function slugFromName(name: string): string {
   return name
@@ -86,6 +161,13 @@ export function getDefaultStore(): StoreConfig {
 
 export async function readStore(): Promise<StoreConfig> {
   try {
+    const remote = await readRemoteStore();
+    if (remote) return migrateLegacyProducts(remote);
+  } catch (error) {
+    console.error("[store] Erro ao ler config remota; usando fallback local:", error);
+  }
+
+  try {
     const raw = await fs.readFile(STORE_PATH, "utf-8");
     const parsed = JSON.parse(raw) as StoreConfig;
     return migrateLegacyProducts(parsed);
@@ -95,7 +177,17 @@ export async function readStore(): Promise<StoreConfig> {
 }
 
 export async function writeStore(config: StoreConfig): Promise<void> {
-  const { products: _legacy, ...toSave } = config;
+  if (await writeRemoteStore(config)) {
+    return;
+  }
+
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Persistencia remota nao configurada. Defina KV_REST_API_URL/KV_REST_API_TOKEN ou UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN na Vercel."
+    );
+  }
+
+  const toSave = JSON.parse(serializeStore(config));
   await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
   await fs.writeFile(STORE_PATH, JSON.stringify(toSave, null, 2), "utf-8");
 }
