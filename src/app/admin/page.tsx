@@ -23,6 +23,10 @@ type Tab =
   | "sizes"
   | "modifiers";
 
+type StatusFilter = AdminOrderStatus | "all";
+type PaymentFilter = AdminPaymentMethod | "all";
+type FulfillmentFilter = AdminOrder["fulfillment"] | "all";
+
 function newFlavor(): Flavor {
   return {
     id: `sabor-${Date.now()}`,
@@ -40,6 +44,30 @@ const paymentMethods: AdminPaymentMethod[] = [
   "Cartão",
   "Débito",
   "Crédito",
+];
+
+const statusFilterOptions: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "Pedido recebido", label: "Pedido recebido" },
+  { value: "Pedido aceito", label: "Pedido aceito" },
+  { value: "Em preparo", label: "Em preparo" },
+  { value: "Saiu para entrega", label: "Saiu para entrega" },
+  { value: "Finalizado", label: "Entregue/Finalizado" },
+];
+
+const paymentFilterOptions: { value: PaymentFilter; label: string }[] = [
+  { value: "all", label: "Todas" },
+  { value: "Pix", label: "Pix" },
+  { value: "Dinheiro", label: "Dinheiro" },
+  { value: "Débito", label: "Débito" },
+  { value: "Crédito", label: "Crédito" },
+  { value: "Cartão", label: "Cartão" },
+];
+
+const fulfillmentFilterOptions: { value: FulfillmentFilter; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "delivery", label: "Delivery" },
+  { value: "pickup", label: "Retirada" },
 ];
 
 const orderStatuses: AdminOrderStatus[] = [
@@ -122,6 +150,33 @@ function mergeOrders(primary: AdminOrder[], secondary: AdminOrder[]) {
   );
 }
 
+function normalizePhoneForWhatsapp(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
+function whatsappMessageForStatus(status: AdminOrderStatus) {
+  switch (status) {
+    case "Pedido recebido":
+      return "Olá, tudo bem? Aqui é da Gravidade Zero Milkshakes. Recebemos seu pedido e já vamos iniciar o preparo 🚀";
+    case "Pedido aceito":
+      return "Olá, tudo bem? Aqui é da Gravidade Zero Milkshakes. Seu pedido foi aceito e já está em preparo 🚀";
+    case "Em preparo":
+      return "Olá, tudo bem? Seu pedido está em preparo 🚀";
+    case "Saiu para entrega":
+      return "Olá, tudo bem? Seu pedido saiu para entrega 🛵";
+    case "Finalizado":
+      return "Olá, tudo bem? Seu pedido foi finalizado. Obrigado por comprar com a Gravidade Zero Milkshakes 👽";
+  }
+}
+
+function whatsappCustomerUrl(order: AdminOrder) {
+  const phone = normalizePhoneForWhatsapp(order.customerPhone);
+  const text = encodeURIComponent(whatsappMessageForStatus(order.status));
+  return phone ? `https://wa.me/${phone}?text=${text}` : "";
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [config, setConfig] = useState<StoreConfig | null>(null);
@@ -130,6 +185,12 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [adminOrders, setAdminOrders] = useState<AdminOrder[]>(mockAdminOrders);
   const [usingMockOrders, setUsingMockOrders] = useState(true);
+  const [orderNameSearch, setOrderNameSearch] = useState("");
+  const [orderPhoneSearch, setOrderPhoneSearch] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<StatusFilter>("all");
+  const [orderPaymentFilter, setOrderPaymentFilter] = useState<PaymentFilter>("all");
+  const [orderFulfillmentFilter, setOrderFulfillmentFilter] =
+    useState<FulfillmentFilter>("all");
 
   useEffect(() => {
     fetch("/api/admin/config")
@@ -212,6 +273,10 @@ export default function AdminPage() {
     void updateOrderStatus(order.id, nextStatus);
   }
 
+  function finishOrder(order: AdminOrder) {
+    void updateOrderStatus(order.id, "Finalizado");
+  }
+
   if (loading) {
     return (
       <main className="mx-auto max-w-2xl p-6">
@@ -267,6 +332,31 @@ export default function AdminPage() {
     status: orderStatus,
     count: orders.filter((order) => order.status === orderStatus).length,
   }));
+  const normalizedNameSearch = orderNameSearch.trim().toLowerCase();
+  const normalizedPhoneSearch = orderPhoneSearch.replace(/\D/g, "");
+  const filteredOrders = orders.filter((order) => {
+    const matchesName =
+      !normalizedNameSearch ||
+      order.customerName.toLowerCase().includes(normalizedNameSearch);
+    const matchesPhone =
+      !normalizedPhoneSearch ||
+      order.customerPhone.replace(/\D/g, "").includes(normalizedPhoneSearch);
+    const matchesStatus =
+      orderStatusFilter === "all" || order.status === orderStatusFilter;
+    const matchesPayment =
+      orderPaymentFilter === "all" || order.paymentMethod === orderPaymentFilter;
+    const matchesFulfillment =
+      orderFulfillmentFilter === "all" ||
+      order.fulfillment === orderFulfillmentFilter;
+
+    return (
+      matchesName &&
+      matchesPhone &&
+      matchesStatus &&
+      matchesPayment &&
+      matchesFulfillment
+    );
+  });
 
   return (
     <main className="gz-cosmic-page mx-auto min-h-dvh max-w-5xl px-4 py-6">
@@ -411,9 +501,60 @@ export default function AdminPage() {
               </div>
             </div>
 
+            <div className="grid gap-3 rounded-xl border border-white/10 bg-black/20 p-4 sm:grid-cols-2 lg:grid-cols-5">
+              <label className="block lg:col-span-1">
+                <span className="text-sm text-[var(--gz-muted)]">
+                  Buscar por nome
+                </span>
+                <input
+                  value={orderNameSearch}
+                  onChange={(event) => setOrderNameSearch(event.target.value)}
+                  placeholder="Nome do cliente"
+                  className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-black/30 px-3 text-sm outline-none focus:border-[var(--gz-secondary)]"
+                />
+              </label>
+
+              <label className="block lg:col-span-1">
+                <span className="text-sm text-[var(--gz-muted)]">
+                  Buscar por telefone
+                </span>
+                <input
+                  value={orderPhoneSearch}
+                  onChange={(event) => setOrderPhoneSearch(event.target.value)}
+                  inputMode="tel"
+                  placeholder="Telefone"
+                  className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-black/30 px-3 text-sm outline-none focus:border-[var(--gz-secondary)]"
+                />
+              </label>
+
+              <FilterSelect
+                label="Status"
+                value={orderStatusFilter}
+                onChange={(value) => setOrderStatusFilter(value as StatusFilter)}
+                options={statusFilterOptions}
+              />
+
+              <FilterSelect
+                label="Pagamento"
+                value={orderPaymentFilter}
+                onChange={(value) => setOrderPaymentFilter(value as PaymentFilter)}
+                options={paymentFilterOptions}
+              />
+
+              <FilterSelect
+                label="Entrega"
+                value={orderFulfillmentFilter}
+                onChange={(value) =>
+                  setOrderFulfillmentFilter(value as FulfillmentFilter)
+                }
+                options={fulfillmentFilterOptions}
+              />
+            </div>
+
             <div className="grid gap-3">
-              {orders.map((order) => {
+              {filteredOrders.map((order) => {
                 const isFinalized = order.status === "Finalizado";
+                const whatsappUrl = whatsappCustomerUrl(order);
 
                 return (
                   <article
@@ -492,10 +633,32 @@ export default function AdminPage() {
                       >
                         Avançar
                       </button>
+                      <a
+                        href={whatsappUrl || undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-disabled={!whatsappUrl}
+                        className="flex h-11 items-center justify-center rounded-xl border border-cyan-300/30 px-4 text-center text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/10 aria-disabled:pointer-events-none aria-disabled:opacity-45 sm:col-span-2"
+                      >
+                        Chamar no WhatsApp
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => finishOrder(order)}
+                        disabled={isFinalized}
+                        className="h-11 rounded-xl border border-emerald-300/30 px-4 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-45 sm:col-span-2"
+                      >
+                        Finalizar pedido
+                      </button>
                     </div>
                   </article>
                 );
               })}
+              {filteredOrders.length === 0 && (
+                <div className="rounded-xl border border-white/10 bg-black/20 p-5 text-sm text-[var(--gz-muted)]">
+                  Nenhum pedido encontrado com os filtros selecionados.
+                </div>
+              )}
             </div>
             {status && <p className="text-sm text-[var(--gz-muted)]">{status}</p>}
           </div>
@@ -986,6 +1149,35 @@ function OrderStatusBadge({ status }: { status: AdminOrderStatus }) {
       />
       {status}
     </span>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm text-[var(--gz-muted)]">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-black/30 px-3 text-sm outline-none focus:border-[var(--gz-secondary)]"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
