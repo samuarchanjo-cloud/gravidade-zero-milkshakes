@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Flavor, StoreConfig } from "@/lib/types";
-import { mockAdminOrders, type AdminPaymentMethod } from "./mockOrders";
+import {
+  mockAdminOrders,
+  type AdminOrder,
+  type AdminOrderStatus,
+  type AdminPaymentMethod,
+} from "./mockOrders";
 
 type Tab =
   | "finance"
+  | "orders"
   | "branding"
   | "theme"
   | "business"
@@ -28,6 +34,50 @@ function newFlavor(): Flavor {
 }
 
 const paymentMethods: AdminPaymentMethod[] = ["Pix", "Dinheiro", "Débito", "Crédito"];
+
+const orderStatuses: AdminOrderStatus[] = [
+  "Pedido recebido",
+  "Pedido aceito",
+  "Em preparo",
+  "Saiu para entrega",
+  "Finalizado",
+];
+
+const orderStatusStyles: Record<
+  AdminOrderStatus,
+  { dot: string; surface: string; border: string; text: string }
+> = {
+  "Pedido recebido": {
+    dot: "#9ca3af",
+    surface: "rgba(156, 163, 175, 0.14)",
+    border: "rgba(156, 163, 175, 0.32)",
+    text: "#e5e7eb",
+  },
+  "Pedido aceito": {
+    dot: "#38bdf8",
+    surface: "rgba(56, 189, 248, 0.14)",
+    border: "rgba(56, 189, 248, 0.34)",
+    text: "#bae6fd",
+  },
+  "Em preparo": {
+    dot: "#facc15",
+    surface: "rgba(250, 204, 21, 0.15)",
+    border: "rgba(250, 204, 21, 0.36)",
+    text: "#fde68a",
+  },
+  "Saiu para entrega": {
+    dot: "#c084fc",
+    surface: "rgba(192, 132, 252, 0.15)",
+    border: "rgba(192, 132, 252, 0.36)",
+    text: "#e9d5ff",
+  },
+  Finalizado: {
+    dot: "#4ade80",
+    surface: "rgba(74, 222, 128, 0.14)",
+    border: "rgba(74, 222, 128, 0.34)",
+    text: "#bbf7d0",
+  },
+};
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -63,6 +113,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("finance");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const [adminOrders, setAdminOrders] = useState<AdminOrder[]>(mockAdminOrders);
 
   useEffect(() => {
     fetch("/api/admin/config")
@@ -101,6 +152,20 @@ export default function AdminPage() {
     router.replace("/admin/login");
   }
 
+  function updateOrderStatus(orderId: string, nextStatus: AdminOrderStatus) {
+    setAdminOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId ? { ...order, status: nextStatus } : order
+      )
+    );
+  }
+
+  function advanceOrderStatus(order: AdminOrder) {
+    const currentIndex = orderStatuses.indexOf(order.status);
+    const nextStatus = orderStatuses[Math.min(currentIndex + 1, orderStatuses.length - 1)];
+    updateOrderStatus(order.id, nextStatus);
+  }
+
   if (loading) {
     return (
       <main className="mx-auto max-w-2xl p-6">
@@ -119,6 +184,7 @@ export default function AdminPage() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "finance", label: "Financeiro" },
+    { id: "orders", label: "Pedidos" },
     { id: "branding", label: "Marca" },
     { id: "theme", label: "Cores" },
     { id: "business", label: "Negócio" },
@@ -130,7 +196,7 @@ export default function AdminPage() {
   ];
 
   const now = new Date();
-  const orders = mockAdminOrders.map((order) => ({
+  const orders = adminOrders.map((order) => ({
     ...order,
     createdDate: new Date(order.createdAt),
   }));
@@ -149,6 +215,10 @@ export default function AdminPage() {
   const recentOrders = [...orders]
     .sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())
     .slice(0, 6);
+  const statusCounts = orderStatuses.map((orderStatus) => ({
+    status: orderStatus,
+    count: orders.filter((order) => order.status === orderStatus).length,
+  }));
 
   return (
     <main className="gz-cosmic-page mx-auto min-h-dvh max-w-5xl px-4 py-6">
@@ -247,9 +317,7 @@ export default function AdminPage() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <strong>{order.customerName}</strong>
-                          <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-[var(--gz-muted)]">
-                            {order.status}
-                          </span>
+                          <OrderStatusBadge status={order.status} />
                         </div>
                         <p className="mt-1 text-sm text-[var(--gz-muted)]">
                           {dateTimeFormatter.format(order.createdDate)} · {order.paymentMethod}
@@ -262,6 +330,96 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "orders" && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold">Gestão de pedidos</h2>
+                <p className="mt-1 text-sm text-[var(--gz-muted)]">
+                  Atualize o andamento de cada pedido para manter a operação alinhada.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {statusCounts.map((item) => (
+                  <div
+                    key={item.status}
+                    className="rounded-xl border border-white/10 bg-black/20 px-3 py-2"
+                  >
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--gz-muted)]">
+                      {item.status}
+                    </p>
+                    <strong className="text-sm">{item.count}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {orders.map((order) => {
+                const isFinalized = order.status === "Finalizado";
+
+                return (
+                  <article
+                    key={order.id}
+                    className="grid gap-4 rounded-xl border border-white/10 bg-black/20 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gz-muted)]">
+                          {order.id}
+                        </span>
+                        <OrderStatusBadge status={order.status} />
+                      </div>
+                      <h3 className="mt-2 text-lg font-semibold">{order.customerName}</h3>
+                      <p className="mt-1 text-sm text-[var(--gz-muted)]">
+                        {dateTimeFormatter.format(order.createdDate)} · {order.paymentMethod} ·{" "}
+                        <span className="font-semibold text-[var(--gz-secondary)]">
+                          {currencyFormatter.format(order.total)}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2 sm:min-w-72 sm:grid-cols-[1fr_auto]">
+                      <label className="block">
+                        <span className="sr-only">Status do pedido {order.id}</span>
+                        <select
+                          value={order.status}
+                          onChange={(event) =>
+                            updateOrderStatus(
+                              order.id,
+                              event.target.value as AdminOrderStatus
+                            )
+                          }
+                          className="h-11 w-full rounded-xl border border-white/15 bg-black/30 px-3 text-sm outline-none focus:border-[var(--gz-secondary)]"
+                        >
+                          {orderStatuses.map((orderStatus) => (
+                            <option key={orderStatus} value={orderStatus}>
+                              {orderStatus}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => advanceOrderStatus(order)}
+                        disabled={isFinalized}
+                        className="h-11 rounded-xl border border-white/15 px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45"
+                        style={{
+                          background: isFinalized
+                            ? "rgba(255,255,255,0.04)"
+                            : "var(--gz-primary)",
+                        }}
+                      >
+                        Avançar
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         )}
@@ -705,7 +863,7 @@ export default function AdminPage() {
         )}
       </section>
 
-      {tab !== "finance" && (
+      {tab !== "finance" && tab !== "orders" && (
         <div className="mt-6 flex items-center gap-4">
           <button
             type="button"
@@ -730,6 +888,27 @@ function MetricCard({ label, value }: { label: string; value: string }) {
       </p>
       <strong className="mt-3 block text-2xl text-white">{value}</strong>
     </div>
+  );
+}
+
+function OrderStatusBadge({ status }: { status: AdminOrderStatus }) {
+  const colors = orderStatusStyles[status];
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+      style={{
+        background: colors.surface,
+        borderColor: colors.border,
+        color: colors.text,
+      }}
+    >
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ background: colors.dot }}
+      />
+      {status}
+    </span>
   );
 }
 

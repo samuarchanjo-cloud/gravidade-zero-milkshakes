@@ -1,10 +1,11 @@
 export type AdminPaymentMethod = "Pix" | "Dinheiro" | "Débito" | "Crédito";
 
 export type AdminOrderStatus =
-  | "Recebido"
+  | "Pedido recebido"
+  | "Pedido aceito"
   | "Em preparo"
   | "Saiu para entrega"
-  | "Concluído";
+  | "Finalizado";
 
 export type AdminOrder = {
   id: string;
@@ -30,7 +31,7 @@ export const mockAdminOrders: AdminOrder[] = [
     total: 27.9,
     paymentMethod: "Crédito",
     createdAt: "2026-05-24T19:47:00-03:00",
-    status: "Recebido",
+    status: "Pedido recebido",
   },
   {
     id: "gz-1087",
@@ -46,7 +47,7 @@ export const mockAdminOrders: AdminOrder[] = [
     total: 19.9,
     paymentMethod: "Débito",
     createdAt: "2026-05-24T17:36:00-03:00",
-    status: "Concluído",
+    status: "Pedido aceito",
   },
   {
     id: "gz-1085",
@@ -54,7 +55,7 @@ export const mockAdminOrders: AdminOrder[] = [
     total: 39.8,
     paymentMethod: "Pix",
     createdAt: "2026-05-23T21:12:00-03:00",
-    status: "Concluído",
+    status: "Finalizado",
   },
   {
     id: "gz-1084",
@@ -62,7 +63,7 @@ export const mockAdminOrders: AdminOrder[] = [
     total: 49.7,
     paymentMethod: "Crédito",
     createdAt: "2026-05-22T20:31:00-03:00",
-    status: "Concluído",
+    status: "Finalizado",
   },
   {
     id: "gz-1083",
@@ -70,7 +71,7 @@ export const mockAdminOrders: AdminOrder[] = [
     total: 34.9,
     paymentMethod: "Débito",
     createdAt: "2026-05-20T16:08:00-03:00",
-    status: "Concluído",
+    status: "Finalizado",
   },
   {
     id: "gz-1082",
@@ -78,6 +79,6 @@ export const mockAdminOrders: AdminOrder[] = [
     total: 24.9,
     paymentMethod: "Dinheiro",
     createdAt: "2026-05-18T19:20:00-03:00",
-    status: "Concluído",
+    status: "Finalizado",
   },
 ];
