@@ -232,7 +232,16 @@ export default function AdminPage() {
       body: JSON.stringify(config),
     });
     if (!res.ok) {
-      setStatus("Erro ao salvar. Verifique se ainda está logado.");
+      let message = "Erro ao salvar.";
+      try {
+        const body = (await res.json()) as { error?: string };
+        if (body.error) message = body.error;
+      } catch {
+        if (res.status === 401) {
+          message = "Sessao expirada. Entre novamente no admin.";
+        }
+      }
+      setStatus(`${message} (HTTP ${res.status})`);
       return;
     }
     setStatus("Salvo com sucesso!");

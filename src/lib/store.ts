@@ -96,5 +96,6 @@ export async function readStore(): Promise<StoreConfig> {
 
 export async function writeStore(config: StoreConfig): Promise<void> {
   const { products: _legacy, ...toSave } = config;
+  await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
   await fs.writeFile(STORE_PATH, JSON.stringify(toSave, null, 2), "utf-8");
 }
