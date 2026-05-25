@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { loadClientOrders, saveClientOrders } from "@/lib/clientOrders";
 import type { Flavor, StoreConfig } from "@/lib/types";
 import {
   mockAdminOrders,
@@ -113,6 +114,14 @@ function isSameMonth(date: Date, reference: Date) {
   );
 }
 
+function mergeOrders(primary: AdminOrder[], secondary: AdminOrder[]) {
+  const byId = new Map<string, AdminOrder>();
+  [...primary, ...secondary].forEach((order) => byId.set(order.id, order));
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [config, setConfig] = useState<StoreConfig | null>(null);
@@ -136,16 +145,18 @@ export default function AdminPage() {
         if (!data) return;
         setConfig(data);
 
+        const localOrders = loadClientOrders() as AdminOrder[];
         const ordersRes = await fetch("/api/admin/orders");
         if (!ordersRes.ok) {
-          setUsingMockOrders(true);
-          setAdminOrders(mockAdminOrders);
+          setUsingMockOrders(localOrders.length === 0);
+          setAdminOrders(localOrders.length > 0 ? localOrders : mockAdminOrders);
           return;
         }
 
         const savedOrders = (await ordersRes.json()) as AdminOrder[];
-        setUsingMockOrders(savedOrders.length === 0);
-        setAdminOrders(savedOrders.length > 0 ? savedOrders : mockAdminOrders);
+        const mergedOrders = mergeOrders(savedOrders, localOrders);
+        setUsingMockOrders(mergedOrders.length === 0);
+        setAdminOrders(mergedOrders.length > 0 ? mergedOrders : mockAdminOrders);
       })
       .catch(() => setStatus("Não foi possível carregar o painel."))
       .finally(() => setLoading(false));
@@ -172,11 +183,15 @@ export default function AdminPage() {
   }
 
   async function updateOrderStatus(orderId: string, nextStatus: AdminOrderStatus) {
-    setAdminOrders((currentOrders) =>
-      currentOrders.map((order) =>
+    setAdminOrders((currentOrders) => {
+      const nextOrders = currentOrders.map((order) =>
         order.id === orderId ? { ...order, status: nextStatus } : order
-      )
-    );
+      );
+      if (!usingMockOrders) {
+        saveClientOrders(nextOrders);
+      }
+      return nextOrders;
+    });
 
     if (usingMockOrders) return;
 

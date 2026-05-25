@@ -9,6 +9,7 @@ import {
   saveCart,
   updateLineQuantity,
 } from "@/lib/cart";
+import { buildClientOrder, saveClientOrder } from "@/lib/clientOrders";
 import { cartLineTotal, formatMoney } from "@/lib/pricing";
 import type {
   CartItem,
@@ -130,15 +131,23 @@ export default function CheckoutPage() {
       notes: checkout.notes,
     };
 
-    const saveResponse = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderPayload),
-    });
+    try {
+      const saveResponse = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      });
 
-    if (!saveResponse.ok) {
-      setError("Não foi possível registrar o pedido. Tente novamente.");
-      return;
+      if (saveResponse.ok) {
+        const savedOrder = (await saveResponse.json()) as CustomerOrder;
+        saveClientOrder(savedOrder);
+      } else {
+        saveClientOrder(buildClientOrder(orderPayload));
+        setError("Pedido enviado no WhatsApp. O histórico local foi salvo como backup.");
+      }
+    } catch {
+      saveClientOrder(buildClientOrder(orderPayload));
+      setError("Pedido enviado no WhatsApp. O histórico local foi salvo como backup.");
     }
 
     const message = buildOrderMessage(
